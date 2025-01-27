@@ -18,6 +18,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -28,6 +29,7 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ public class MyflexboxView extends VerticalLayout {
     private UserRepository userRepository;
     private String[] headers;
     private Map<String, String> fieldMappings = new HashMap<>();
+    private List<Map> inputData = new ArrayList<>();
 
     public MyflexboxView() {
         VerticalLayout mainLayout = new VerticalLayout();
@@ -51,7 +54,6 @@ public class MyflexboxView extends VerticalLayout {
         tableHeader.getStyle().set("color", "#154360");
         H2 comboBoxHeader = new H2("Map columns and save input Data");
         comboBoxHeader.getStyle().set("color", "#154360");
-        comboBoxHeader.getStyle().set("padding-left", "100px");
 
         // load table data from input.csv file
         Grid<String[]> dataTable = importTableData();
@@ -138,28 +140,37 @@ public class MyflexboxView extends VerticalLayout {
                         .setResizable(true);
             }
             grid.setItems(entries.subList(1, entries.size()));
+
+            grid.setWidth("60%");
+            grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+
+            grid.getDataProvider().fetch(new Query<>()).forEach(row -> {
+                Map<String, String> inputRow = new HashMap<>();
+                for (int i = 0; i < row.length; i++)
+                    inputRow.put(headers[i], row[i]);
+
+                inputData.add(inputRow);
+            });
         } catch (IOException | CsvException e) {
             grid.addColumn(nop -> "Unable to load CSV: " + e.getMessage()).setHeader("Failed to import CSV file");
         }
-        grid.setWidth("60%");
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
 
         return grid;
     }
 
     private void saveCSVData() {
-        User user = new User();
-        Address address = new Address();
+        for (Map<String, String> map : inputData) {
+            User user = new User();
+            Address address = new Address();
 
-        user.setFirstName("Arthur");
-        user.setLastName("Rahman");
-        address.setStreet("test street");
-        address.setPostcode("8020");
-        address.setCountry("Austria");
-        address.setCity("Graz");
-        user.setAddress(address);
+            user.setFirstName(map.get(fieldMappings.get("first")));
+            user.setLastName(map.get(fieldMappings.get("last")));
+            address.setStreet(map.get(fieldMappings.get("address")));
+            address.setPostcode(map.get(fieldMappings.get("zip")));
+            address.setCountry(map.get(fieldMappings.get("country")));
+            user.setAddress(address);
 
-        userRepository.save(user);
-
+            userRepository.save(user);
+        }
     }
 }
