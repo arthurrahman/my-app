@@ -92,9 +92,10 @@ public class MyflexboxView extends VerticalLayout {
             ComboBox<String> comboBox = new ComboBox<>(headers[i]);
             comboBox.setItems("first", "last", "address", "zip", "country", "ignore");
             comboBox.setValue("first");
+            fieldMappings.put(headers[columnIndex], "first");
 
             comboBox.addValueChangeListener(event -> {
-                fieldMappings.put(headers[columnIndex], event.getValue()); // Store mapping in fieldMappings map
+                fieldMappings.put(headers[columnIndex], event.getValue());
             });
 
             comboBox.getStyle().set("margin-left", "-15px");
@@ -129,7 +130,7 @@ public class MyflexboxView extends VerticalLayout {
             // Assume the first row contains headers
             headers = entries.get(0);
 
-            // Setup a grid with random data
+            // Setup a grid with input data
             for (int i = 0; i < headers.length; i++) {
                 final int columnIndex = i;
                 String header = headers[i];
