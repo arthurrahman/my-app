@@ -1,14 +1,23 @@
 package com.example.application.views.myflexbox;
 
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.exceptions.CsvException;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
+import com.vaadin.flow.shared.util.SharedUtil;
 import org.vaadin.lineawesome.LineAwesomeIconUrl;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @PageTitle("myflexbox")
 @Route("")
@@ -16,21 +25,45 @@ import org.vaadin.lineawesome.LineAwesomeIconUrl;
 public class MyflexboxView extends VerticalLayout {
 
     public MyflexboxView() {
-        setSpacing(false);
+        VerticalLayout mainLayout = new VerticalLayout();
+        mainLayout.setSpacing(false);
+        mainLayout.getThemeList().add("spacing-xs");
 
-        Image img = new Image("images/empty-plant.png", "placeholder plant");
-        img.setWidth("200px");
-        add(img);
+        H2 header = new H2("CSV DATA TABLE");
+        // load table data from input.csv file
+        Grid<String[]> grid = importTableData();
 
-        H2 header = new H2("This place intentionally left empty");
-        header.addClassNames(Margin.Top.XLARGE, Margin.Bottom.MEDIUM);
-        add(header);
-        add(new Paragraph("It’s a place where you can grow your own UI 🤗"));
-
-        setSizeFull();
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
-        getStyle().set("text-align", "center");
+        mainLayout.add(header);
+        mainLayout.add(grid);
+        add(mainLayout);
     }
 
+    Grid<String[]> importTableData() {
+        InputStreamReader csvFileReader = new InputStreamReader(
+                getClass().getResourceAsStream("/input.csv"),
+                StandardCharsets.UTF_8
+        );
+
+        CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
+        CSVReader reader = new CSVReaderBuilder(csvFileReader).withCSVParser(parser).build();
+
+        Grid<String[]> grid = new Grid<>();
+        try {
+            List<String[]> entries = reader.readAll();
+            // Assume the first row contains headers
+            String[] headers = entries.get(0);
+
+            // Setup a grid with random data
+            for (int i = 0; i < headers.length; i++) {
+                final int columnIndex = i;
+                String header = headers[i];
+                String humanReadableHeader = SharedUtil.camelCaseToHumanFriendly(header);
+                grid.addColumn(str -> str[columnIndex]).setHeader(humanReadableHeader);
+            }
+            grid.setItems(entries.subList(1, entries.size()));
+        } catch (IOException | CsvException e) {
+            grid.addColumn(nop -> "Unable to load CSV: " + e.getMessage()).setHeader("Failed to import CSV file");
+        }
+        return grid;
+    }
 }
